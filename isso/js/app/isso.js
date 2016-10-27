@@ -40,17 +40,6 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
             return true;
         };
 
-        // only display notification checkbox if email is filled in
-        var email_edit = function() {
-            if (config["reply-notifications"] && $("[name='email']", el).value.length > 0) {
-                $(".notification-section", el).show();
-            } else {
-                $(".notification-section", el).hide();
-            }
-        };
-        $("[name='email']", el).on("input", email_edit);
-        email_edit();
-
         // email is not optional if this config parameter is set
         if (config["require-email"]) {
             $("[name='email']", el).setAttribute("placeholder",
@@ -62,23 +51,6 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
           $("[name='author']", el).placeholder =
             $("[name='author']", el).placeholder.replace(/ \(.*\)/, "");
         }
-
-        // preview function
-        $("[name='preview']", el).on("click", function() {
-            api.preview(utils.text($(".textarea", el).innerHTML)).then(
-                function(html) {
-                    $(".preview .text", el).innerHTML = html;
-                    el.classList.add('preview-mode');
-                });
-        });
-
-        // edit function
-        var edit = function() {
-            $(".preview .text", el).innerHTML = '';
-            el.classList.remove('preview-mode');
-        };
-        $("[name='edit']", el).on("click", edit);
-        $(".preview", el).on("click", edit);
 
         // submit form, initialize optional fields with `null` and reset form.
         // If replied to a comment, remove form completely.
@@ -214,7 +186,7 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
                 // Eg. -5,5,15
                 voteLevels = voteLevels.split(',');
             }
-            
+
             // update vote counter
             var votes = function (value) {
                 var span = $("span.votes", footer);
@@ -252,111 +224,9 @@ define(["app/dom", "app/utils", "app/config", "app/api", "app/jade", "app/i18n",
                     votes(rv.likes - rv.dislikes);
                 });
             });
-            
+
             votes(comment.likes - comment.dislikes);
         }
-
-        $("a.edit", footer).toggle("click",
-            function(toggler) {
-                var edit = $("a.edit", footer);
-                var avatar = config["avatar"] || config["gravatar"] ? $(".avatar", el, false)[0] : null;
-
-                edit.textContent = i18n.translate("comment-save");
-                edit.insertAfter($.new("a.cancel", i18n.translate("comment-cancel"))).on("click", function() {
-                    toggler.canceled = true;
-                    toggler.next();
-                });
-
-                toggler.canceled = false;
-                api.view(comment.id, 1).then(function(rv) {
-                    var textarea = lib.editorify($.new("div.textarea"));
-
-                    textarea.innerHTML = utils.detext(rv.text);
-                    textarea.focus();
-
-                    text.classList.remove("text");
-                    text.classList.add("textarea-wrapper");
-
-                    text.textContent = "";
-                    text.append(textarea);
-                });
-
-                if (avatar !== null) {
-                    avatar.hide();
-                }
-            },
-            function(toggler) {
-                var textarea = $(".textarea", text);
-                var avatar = config["avatar"] || config["gravatar"] ? $(".avatar", el, false)[0] : null;
-
-                if (! toggler.canceled && textarea !== null) {
-                    if (utils.text(textarea.innerHTML).length < 3) {
-                        textarea.focus();
-                        toggler.wait();
-                        return;
-                    } else {
-                        api.modify(comment.id, {"text": utils.text(textarea.innerHTML)}).then(function(rv) {
-                            text.innerHTML = rv.text;
-                            comment.text = rv.text;
-                        });
-                    }
-                } else {
-                    text.innerHTML = comment.text;
-                }
-
-                text.classList.remove("textarea-wrapper");
-                text.classList.add("text");
-
-                if (avatar !== null) {
-                    avatar.show();
-                }
-
-                $("a.cancel", footer).remove();
-                $("a.edit", footer).textContent = i18n.translate("comment-edit");
-            }
-        );
-
-        $("a.delete", footer).toggle("click",
-            function(toggler) {
-                var del = $("a.delete", footer);
-                var state = ! toggler.state;
-
-                del.textContent = i18n.translate("comment-confirm");
-                del.on("mouseout", function() {
-                    del.textContent = i18n.translate("comment-delete");
-                    toggler.state = state;
-                    del.onmouseout = null;
-                });
-            },
-            function() {
-                var del = $("a.delete", footer);
-                api.remove(comment.id).then(function(rv) {
-                    if (rv) {
-                        el.remove();
-                    } else {
-                        $("span.note", header).textContent = i18n.translate("comment-deleted");
-                        text.innerHTML = "<p>&nbsp;</p>";
-                        $("a.edit", footer).remove();
-                        $("a.delete", footer).remove();
-                    }
-                    del.textContent = i18n.translate("comment-delete");
-                });
-            }
-        );
-
-        // remove edit and delete buttons when cookie is gone
-        var clear = function(button) {
-            if (! utils.cookie("isso-" + comment.id)) {
-                if ($(button, footer) !== null) {
-                    $(button, footer).remove();
-                }
-            } else {
-                setTimeout(function() { clear(button); }, 15*1000);
-            }
-        };
-
-        clear("a.edit");
-        clear("a.delete");
 
         // show direct reply to own comment when cookie is max aged
         var show = function(el) {

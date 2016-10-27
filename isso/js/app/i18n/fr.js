@@ -10,7 +10,7 @@ define({
     "num-comments": "{{ n }} commentaire\n{{ n }} commentaires",
     "no-comments": "Aucun commentaire pour l'instant",
     "atom-feed": "Flux Atom",
-    "comment-reply": "Répondre",
+    "comment-reply": "→ Répondre",
     "comment-edit": "Éditer",
     "comment-save": "Enregistrer",
     "comment-delete": "Supprimer",
