@@ -85,6 +85,7 @@ class API(object):
         ('new',     ('POST', '/new')),
         ('count',   ('GET', '/count')),
         ('counts',  ('POST', '/count')),
+        ('author',  ('GET', '/author')),
         ('view',    ('GET', '/id/<int:id>')),
         ('edit',    ('PUT', '/id/<int:id>')),
         ('delete',  ('DELETE', '/id/<int:id>')),
@@ -491,6 +492,15 @@ class API(object):
             raise BadRequest("JSON must be a list of URLs")
 
         return JSON(self.comments.count(*data), 200)
+
+    def author(self, environ, request):
+
+        rv = self.isso.author
+
+        if rv == "":
+            raise NotFound
+
+        return JSON(rv, 200)
 
     def preview(self, environment, request):
         data = request.get_json()
