@@ -16,6 +16,7 @@ from werkzeug.utils import redirect
 from werkzeug.routing import Rule
 from werkzeug.wrappers import Response
 from werkzeug.exceptions import BadRequest, Forbidden, NotFound
+from werkzeug.contrib.securecookie import SecureCookie
 
 from isso.compat import text_type as str
 
@@ -60,10 +61,7 @@ def xhr(func):
 
     If the header is not sent or requests `application/json`, the request is
     not forged (XHR is restricted by CORS separately).
-    """
 
-
-    """
     @apiDefine csrf
     @apiHeader {string="application/json"} Content-Type
         The content type must be set to `application/json` to prevent CSRF attacks.
@@ -157,8 +155,7 @@ class API(object):
     @apiDefine plainParam
     @apiParam {number=0,1} [plain]
         Iff set to `1`, the plain text entered by the user will be returned in the comments’ `text` attribute (instead of the rendered markdown).
-    """
-    """
+
     @apiDefine commentResponse
 
     @apiSuccess {number} id
@@ -182,9 +179,7 @@ class API(object):
         UNIX timestamp of the time the comment was created (on the server).
     @apiSuccess {number} modified
         UNIX timestamp of the time the comment was last modified (on the server). `null` if the comment was not yet modified.
-    """
 
-    """
     @api {post} /new create new
     @apiGroup Comment
     @apiDescription
@@ -552,7 +547,6 @@ class API(object):
             self.signal("comments.delete", id)
             return Response("Yo", 200)
 
-
         """
         @api {get} / get comments
         @apiGroup Thread
@@ -738,9 +732,7 @@ class API(object):
         The (new) number of likes on the comment.
     @apiSuccess {number} dislikes
         The (new) number of dislikes on the comment.
-    """
 
-    """
     @api {post} /id/:id/like like
     @apiGroup Comment
     @apiDescription

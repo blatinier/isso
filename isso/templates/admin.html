@@ -54,7 +54,11 @@ function edit(com_id, hash, author, email, website, comment) {
         }});
 }
 function validate_com(com_id, hash) {
+<<<<<<< HEAD
     moderate(com_id, hash, "activate");
+=======
+    moderate(com_id, hash, "validate");
+>>>>>>> 8ea09a9838edf83fe15430d9240b1006a5b3ab43
 }
 function delete_com(com_id, hash) {
     moderate(com_id, hash, "delete");
@@ -178,7 +182,11 @@ function send_edit(com_id, hash) {
       {% if order_by == "tid" %}
         {% if thread_id != comment.tid %}
           {% set thread_id = comment.tid %}
+<<<<<<< HEAD
           <h2 class="thread-title">{{comment.title}} (<a href="{{host}}{{comment.uri}}">{{host}}{{comment.uri}}</a>)</h2>
+=======
+          <h2 class="thread-title">{{comment.title}} (<a href="{{comment.uri}}">{{comment.uri}}</a>)</h2>
+>>>>>>> 8ea09a9838edf83fe15430d9240b1006a5b3ab43
         {% endif %}
       {% endif %}
 <div class='isso-comment' id='isso-{{comment.id}}'>
@@ -190,7 +198,11 @@ function send_edit(com_id, hash) {
     <div class='text-wrapper'>
       <div class='isso-comment-header' role='meta'>
         {% if order_by != "tid" %}
+<<<<<<< HEAD
           <div>Thread: {{comment.title}} (<a href="{{host}}{{comment.uri}}">{{host}}{{comment.uri}}</a>)</div><br />
+=======
+          <div>Thread: {{comment.title}} (<a href="{{comment.uri}}">{{comment.uri}}</a>)</div><br />
+>>>>>>> 8ea09a9838edf83fe15430d9240b1006a5b3ab43
         {% endif %}
         {% if comment.author %}
           <span class='author' id="isso-author-{{comment.id}}">{{comment.author}}</span>
