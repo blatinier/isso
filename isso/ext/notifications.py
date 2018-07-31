@@ -90,7 +90,8 @@ class SMTP(object):
             def spooler(args):
                 try:
                     self._sendmail(args[b"subject"].decode("utf-8"),
-                                   args["body"].decode("utf-8"))
+                                   args["body"].decode("utf-8"),
+                                   args["unsubscribe_link"].decode("utf-8"))
                 except smtplib.SMTPConnectError:
                     return uwsgi.SPOOL_RETRY
                 else:
@@ -102,7 +103,13 @@ class SMTP(object):
         yield "comments.new:after-save", self.notify_new
         yield "comments.activate", self.notify_activated
 
-    def format(self, thread, comment, parent_comment, recipient=None, admin=False):
+    def get_unsubscribe_link(self, parent_comment, recipient):
+        uri = self.public_endpoint + "/id/%i" % parent_comment["id"]
+        key = self.isso.sign(('unsubscribe', recipient))
+
+        return "%s/unsubscribe/%s/%s" % (uri, quote(recipient), key)
+
+    def format(self, thread, comment, parent_comment, recipient=None, unsubscribe_link="", admin=False):
 
         rv = io.StringIO()
 
@@ -134,12 +141,8 @@ class SMTP(object):
 
             if comment["mode"] == 2:
                 rv.write("Activate comment: %s\n" % (uri + "/activate/" + key))
-
         else:
-            uri = self.public_endpoint + "/id/%i" % parent_comment["id"]
-            key = self.isso.sign(('unsubscribe', recipient))
-
-            rv.write("Unsubscribe from this conversation: %s\n" % (uri + "/unsubscribe/" + quote(recipient) + "/" + key))
+            rv.write("Unsubscribe from this conversation: %s\n" % unsubscribe_link)
 
         rv.seek(0)
         return rv.read()
@@ -166,20 +169,22 @@ class SMTP(object):
                 email = comment_to_notify["email"]
                 if "email" in comment_to_notify and comment_to_notify["notification"] and email not in notified \
                     and comment_to_notify["id"] != comment["id"] and email != comment["email"]:
-                    body = self.format(thread, comment, parent_comment, email, admin=False)
+                    unsubscribe_link = self.get_unsubscribe_link(parent_comment, email)
+                    body = self.format(thread, comment, parent_comment, email, unsubscribe_link, admin=False)
                     subject = "Re: New comment posted on %s" % thread["title"]
-                    self.sendmail(subject, body, thread, comment, to=email)
+                    self.sendmail(subject, body, thread, comment, unsubscribe_link, to=email)
                     notified.append(email)
 
-    def sendmail(self, subject, body, thread, comment, to=None):
+    def sendmail(self, subject, body, thread, comment, unsubscribe_link="", to=None):
         if uwsgi:
             uwsgi.spool({b"subject": subject.encode("utf-8"),
                          b"body": body.encode("utf-8"),
+                         b"unsubscribe_link": unsubscribe_link.encode("utf-8"),
                          b"to": to})
         else:
-            start_new_thread(self._retry, (subject, body, to))
+            start_new_thread(self._retry, (subject, body, unsubscribe_link, to))
 
-    def _sendmail(self, subject, body, to=None):
+    def _sendmail(self, subject, body, unsubscribe_link, to=None):
 
         from_addr = self.conf.get("from")
         to_addr = to or self.conf.get("to")
@@ -189,14 +194,16 @@ class SMTP(object):
         msg['To'] = to_addr
         msg['Date'] = formatdate(localtime=True)
         msg['Subject'] = Header(subject, 'utf-8')
+        if unsubscribe_link:
+            msg['List-Unsubscribe'] = unsubscribe_link
 
         with SMTPConnection(self.conf) as con:
             con.sendmail(from_addr, to_addr, msg.as_string())
 
-    def _retry(self, subject, body, to):
+    def _retry(self, subject, body, unsubscribe_link, to):
         for x in range(5):
             try:
-                self._sendmail(subject, body, to)
+                self._sendmail(subject, body, unsubscribe_link, to)
             except smtplib.SMTPConnectError:
                 time.sleep(60)
             else:
